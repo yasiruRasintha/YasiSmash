@@ -1,0 +1,301 @@
+<HTML>
+    <head>
+        <title>"A javascript game by Yasiru!"</title>
+        <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+        
+    </head>
+    <body>
+            <div class="foo" style="text-align:center">
+                    <span class="letter" data-letter="Y">Y</span>
+                    <span class="letter" data-letter="A">A</span>
+                    <span class="letter" data-letter="S">S</span>
+                    <span class="letter" data-letter="I">I</span>
+                    <span class="letter" data-letter="S">S</span>
+                    <span class="letter" data-letter="M">M</span>
+                    <span class="letter" data-letter="A">A</span>
+                    <span class="letter" data-letter="S">S</span>
+                    <span class="letter" data-letter="H">H</span>
+                    <span class="letter" data-letter="!">!</span>
+            </div>       
+        <canvas id = 'gameCanvas' width="1414" height = "600">
+
+        <div class="modal fade" id="myModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                          
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Modal Heading</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                            
+                <!-- Modal body -->
+                <div class="modal-body">
+                    Awww, are you sure you want to quit?
+                </div>
+                            
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Yes</button>
+                    <button type="button" class="btn btn-secondary">No</button>
+                </div>
+                            
+        </div>    
+
+        </canvas>
+        <script>
+
+            var canvas;
+            var canvasContext;
+            var ballPositionX = 10;
+            var ballSpeedX = 5;
+            var ballPositionY = 50;
+            var ballSpeedY = 10;
+            var paddle1Y = 250;
+            var paddle2Y = 250;
+            const PADDLE_HEIGHT = 75;
+            const PADDLE_THICKNESS = 10;
+            var score1 = 0;
+            var score2 = 0;
+            var audio = new Audio("hit sound.wav");
+            var ballRadius = 7;
+            var paddle1X = 0;
+            var paddle2X;
+            
+
+            function getRandomInt(max) {
+                 return Math.floor(Math.random() * Math.floor(max));
+             }   
+
+            function calculateMousePos(evt) {
+                var rect = canvas.getBoundingClientRect();
+                var root = document.documentElement;
+                var mouseX = evt.clientX - rect.left - root.scrollLeft;
+                var mouseY = evt.clientY - rect.top - root.scrollTop;
+                if(mouseY >= 600){
+                    mouseY = mouseY + 10;
+                }else if(mouseY > 5){
+                    mouseY = mouseY - 40;
+                }
+                return {
+                    x:mouseX,
+                    y:mouseY
+                }
+            }
+            
+            function resetBall() {
+                ballPositionX = getRandomInt(100) * getRandomInt(5);
+                ballPositionY = canvas.height/2 + getRandomInt(10) * 10;
+            }
+
+            window.onload = function() {
+                canvas = document.getElementById('gameCanvas');
+                canvasContext = canvas.getContext('2d');
+                paddle2X = canvas.width - PADDLE_THICKNESS
+                var framesPerSecond = 30;
+                var intervalID;
+
+                intervalID = setInterval(function() {
+                    moveEverything();
+                    drawEverything();
+                }, 1000/framesPerSecond );
+
+                canvas.addEventListener("mousemove", function(evt) {
+                    var mousepos = calculateMousePos(evt);
+                    paddle1Y = mousepos.y - PADDLE_HEIGHT/2;
+                });
+                
+                window.addEventListener("keydown",function(evt){
+                    if(evt.keyCode == "27"){
+                        //$( document ).ready(function() {
+                            //$('#myModal').modal('show');
+                           // });
+                           var output = prompt("Awww, do you want to quit already?");
+                           if(output == "yes"){
+                               clearInterval(intervalID);
+                               canvasContext.beginPath();
+                               canvasContext.clearRect(0,0,canvas.width,canvas.height);
+                               endOfGame();
+                           }else if(output== "infinity points"){
+                               score1 += 10000000000;
+                           }
+                    }
+                });
+            }
+            
+            function screenShot() {
+                let region = document.querySelector("body");
+                let pngUrl;// whole screen
+                html2canvas(region, {
+                    onrendered: function (canvas) {
+                    let pngUrl = canvas.toDataURL();
+                    let img = document.querySelector(".screen");
+                    img.src = pngUrl;  // pngUrl contains screenshot graphics data in url form
+                    },
+                });
+                return pngUrl;
+            }
+
+            function calculateComputerPaddlePos() {
+                var paddle2YCenter  = paddle2Y + PADDLE_HEIGHT/2;
+                paddle2Y = ballPositionY;
+            //    if(paddle2YCenter < ballPositionY){
+            //        paddle2Y = ballPositionY - PADDLE_HEIGHT/2;
+            //       }else{
+            //           paddle2Y = ballPositionY + PADDLE_HEIGHT/2;
+            //       }
+            }
+
+            function endOfGame() {
+                var result = "";
+                var scoreDifference = 0;
+                if(score1 > score2){
+                    result = "won";
+                    scoreDifference = score1 - score2;
+                }else if(score1 == score2){
+                    result = "drew"
+                    scoreDifference = score2 - score1;
+                }else{
+                    result = "lost";
+                    scoreDifference = score2 - score1;
+                }
+                var banner = "You" + " " + result + " " +  "by" + " " + scoreDifference + " " + "points!";
+                canvasContext.font = "normal bold 40px Courier New";
+                canvasContext.fillText(banner,canvas.width/2 - 250,canvas.height/2);
+                canvasContext.drawImage(screenShot(),100,100);
+            }
+            
+            function moveEverything() {
+                ballPositionX = ballPositionX + ballSpeedX;
+                calculateComputerPaddlePos();
+                if(ballPositionX > canvas.width - ballRadius){
+                   if(ballPositionX > paddle2X){
+                        if(ballPositionY >= paddle2Y && ballPositionY <= paddle2Y+PADDLE_HEIGHT){
+                            ballSpeedX = -ballSpeedX;
+                            audio.play();
+                        }else{
+                            score1+= 10;
+                            resetBall();
+                        }
+                    }
+                }
+                else if(ballPositionX < ballRadius ) {
+                    if(ballPositionX > paddle1X){
+                        if(ballPositionY > paddle1Y && ballPositionY < paddle1Y+PADDLE_HEIGHT){
+                            ballSpeedX = -ballSpeedX;
+                            audio.play();
+                        }else{
+                            resetBall();
+                            score2 += 10;
+                        }
+                    }
+                }
+                ballPositionY = ballPositionY + ballSpeedY;
+                if(ballPositionY > canvas.height + ballRadius){
+                    ballSpeedY = -ballSpeedY;
+                }else if(ballPositionY < ballRadius) {
+                    ballSpeedY = -ballSpeedY;
+                }
+            }
+            
+
+            function drawEverything() {
+                var canvasCenterX = canvas.width/2;
+                canvasContext.fillStyle = 'black';
+                canvasContext.fillRect(0,0,canvas.width,canvas.height);
+                canvasContext.fillStyle = "blue";
+                canvasContext.fillRect(paddle1X,paddle1Y,PADDLE_THICKNESS,PADDLE_HEIGHT);
+                canvasContext.fillStyle = "white";
+                canvasContext.fillRect(paddle2X,paddle2Y,PADDLE_THICKNESS,PADDLE_HEIGHT);
+                canvasContext.beginPath();
+                canvasContext.arc(ballPositionX,ballPositionY,ballRadius,0,Math.PI * 2, true);
+                canvasContext.fill();   
+                canvasContext.fillStyle = 'white';
+                for(var i = 0;i<canvas.height;i++){
+                    canvasContext.fillRect(canvasCenterX,i*20,2.7,5);
+                } 
+                canvasContext.fillText(score1,100,100); 
+                canvasContext.fillText(score2,1313,100);   
+            }
+
+        </script>
+
+        <style>
+            body{
+               background-color: burlywood; 
+            }
+            @import url(https://fonts.googleapis.com/css?family=Lato:900);
+                *, *:before, *:after{
+                box-sizing:border-box;
+                }
+                body{
+                font-family: 'Lato', sans-serif;
+                    ;
+                }
+                div.foo{
+                width: 90%;
+                margin: 0 auto;
+                text-align: center;
+                }
+                .letter{
+                display: inline-block;
+                font-weight: 900;
+                font-size: 6em;
+                margin: 0.2em;
+                position: relative;
+                color: #00B4F1;
+                transform-style: preserve-3d;
+                perspective: 400;
+                z-index: 1;
+                }
+                .letter:before, .letter:after{
+                position:absolute;
+                content: attr(data-letter);
+                transform-origin: top left;
+                top:0;
+                left:0;
+                }
+                .letter, .letter:before, .letter:after{
+                transition: all 0.3s ease-in-out;
+                }
+                .letter:before{
+                color: #fff;
+                text-shadow: 
+                    -1px 0px 1px rgba(255,255,255,.8),
+                    1px 0px 1px rgba(0,0,0,.8);
+                z-index: 3;
+                transform:
+                    rotateX(0deg)
+                    rotateY(-15deg)
+                    rotateZ(0deg);
+                }
+                .letter:after{
+                color: rgba(0,0,0,.11);
+                z-index:2;
+                transform:
+                    scale(1.08,1)
+                    rotateX(0deg)
+                    rotateY(0deg)
+                    rotateZ(0deg)
+                    skew(0deg,1deg);
+                }
+                .letter:hover:before{
+                color: #fafafa;
+                transform:
+                    rotateX(0deg)
+                    rotateY(-40deg)
+                    rotateZ(0deg);
+                }
+                .letter:hover:after{
+                transform:
+                    scale(1.08,1)
+                    rotateX(0deg)
+                    rotateY(40deg)
+                    rotateZ(0deg)
+                    skew(0deg,22deg);
+                }
+        </style>
+    </body>
+</HTML>
